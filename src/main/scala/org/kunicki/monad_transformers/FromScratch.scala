@@ -30,3 +30,13 @@ case class OptionInsideFuture[A](value: Future[Option[A]])(implicit ec: Executio
     case None => Future.successful(None)
   })
 }
+
+case class OptionInsideList[A](value: List[Option[A]])(implicit ec: ExecutionContext) {
+
+  def map[B](f: A => B): OptionInsideList[B] = OptionInsideList(value.map(_.map(f)))
+
+  def flatMap[B](f: A => OptionInsideList[B]): OptionInsideList[B] = OptionInsideList(value.flatMap {
+    case Some(a) => f(a).value
+    case None => List(None)
+  })
+}
