@@ -1,5 +1,7 @@
 package org.kunicki.monad_transformers
 
+import cats.{Functor, Monad}
+
 import scala.concurrent.{ExecutionContext, Future}
 
 case class User(id: Long, name: String)
@@ -13,6 +15,8 @@ class FromScratch {
   private def findUserById(id: Long): Effect[User] = ???
 
   private def findCompanyByUser(user: User): Effect[Company] = ???
+
+  import cats.instances.future._
 
   def findCompanyByUserId(id: Long)(implicit ec: ExecutionContext): Future[Option[Company]] =
     (for {
@@ -41,21 +45,14 @@ case class OptionInsideList[A](value: List[Option[A]])(implicit ec: ExecutionCon
   })
 }
 
-trait MapAndFlatMap[A] {
+case class OptionInsideAnything[Anything[_], A](value: Anything[Option[A]])(implicit ec: ExecutionContext) {
 
-  def map[B](f: A => B): MapAndFlatMap[B]
+  def map[B](f: A => B)(implicit FA: Functor[Anything]): OptionInsideAnything[Anything, B] =
+    OptionInsideAnything(FA.map(value)(_.map(f)))
 
-  def flatMap[B](f: A => MapAndFlatMap[B]): MapAndFlatMap[B]
-
-  def pure[A](a: A): MapAndFlatMap[A]
-}
-
-case class OptionInsideAnything[Anything[T] <: MapAndFlatMap[T], A](value: Anything[Option[A]])(implicit ec: ExecutionContext) {
-
-  def map[B](f: A => B): OptionInsideAnything[Anything, B] = OptionInsideAnything(value.map(_.map(f)))
-
-  def flatMap[B](f: A => OptionInsideAnything[Anything, B]): OptionInsideAnything[Anything, B] = OptionInsideAnything(value.flatMap {
-    case Some(a) => f(a).value
-    case None => value.pure(None)
-  })
+  def flatMap[B](f: A => OptionInsideAnything[Anything, B])(implicit MA: Monad[Anything]): OptionInsideAnything[Anything, B] =
+    OptionInsideAnything(MA.flatMap(value) {
+      case Some(a) => f(a).value
+      case None => MA.pure(None)
+    })
 }
