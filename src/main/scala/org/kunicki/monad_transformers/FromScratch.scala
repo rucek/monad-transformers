@@ -10,5 +10,5 @@ class FromScratch {
 
   private def findCompanyByUser(user: User): Company = ???
 
-  def findCompanyByUserId(id: Long): Company = ???
+  def findCompanyByUserId(id: Long): Company = findCompanyByUser(findUserById(id))
 }
