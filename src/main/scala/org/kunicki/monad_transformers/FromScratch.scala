@@ -1,5 +1,6 @@
 package org.kunicki.monad_transformers
 
+import cats.data.OptionT
 import cats.{Functor, Monad}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -10,7 +11,7 @@ case class Company(id: Long, name: String)
 
 class FromScratch {
 
-  type Effect[A] = OptionInsideAnything[Future, A]
+  type Effect[A] = OptionT[Future, A]
 
   private def findUserById(id: Long): Effect[User] = ???
 
@@ -23,6 +24,10 @@ class FromScratch {
       user <- findUserById(id)
       company <- findCompanyByUser(user)
     } yield company).value
+
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  def test = OptionT.fromOption[Future](None)
 }
 
 case class OptionInsideFuture[A](value: Future[Option[A]])(implicit ec: ExecutionContext) {
