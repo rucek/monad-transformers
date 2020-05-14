@@ -8,7 +8,7 @@ case class Company(id: Long, name: String)
 
 class FromScratch {
 
-  type Effect[A] = OptionInsideFuture[A]
+  type Effect[A] = OptionInsideAnything[Future, A]
 
   private def findUserById(id: Long): Effect[User] = ???
 
@@ -38,5 +38,24 @@ case class OptionInsideList[A](value: List[Option[A]])(implicit ec: ExecutionCon
   def flatMap[B](f: A => OptionInsideList[B]): OptionInsideList[B] = OptionInsideList(value.flatMap {
     case Some(a) => f(a).value
     case None => List(None)
+  })
+}
+
+trait MapAndFlatMap[A] {
+
+  def map[B](f: A => B): MapAndFlatMap[B]
+
+  def flatMap[B](f: A => MapAndFlatMap[B]): MapAndFlatMap[B]
+
+  def pure[A](a: A): MapAndFlatMap[A]
+}
+
+case class OptionInsideAnything[Anything[T] <: MapAndFlatMap[T], A](value: Anything[Option[A]])(implicit ec: ExecutionContext) {
+
+  def map[B](f: A => B): OptionInsideAnything[Anything, B] = OptionInsideAnything(value.map(_.map(f)))
+
+  def flatMap[B](f: A => OptionInsideAnything[Anything, B]): OptionInsideAnything[Anything, B] = OptionInsideAnything(value.flatMap {
+    case Some(a) => f(a).value
+    case None => value.pure(None)
   })
 }
