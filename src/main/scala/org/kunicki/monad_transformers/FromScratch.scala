@@ -6,9 +6,15 @@ case class Company(id: Long, name: String)
 
 class FromScratch {
 
-  private def findUserById(id: Long): User = ???
+  type Effect[A] = Option[A]
 
-  private def findCompanyByUser(user: User): Company = ???
+  private def findUserById(id: Long): Effect[User] = ???
 
-  def findCompanyByUserId(id: Long): Company = findCompanyByUser(findUserById(id))
+  private def findCompanyByUser(user: User): Effect[Company] = ???
+
+  def findCompanyByUserId(id: Long): Option[Company] =
+    for {
+      user <- findUserById(id)
+      company <- findCompanyByUser(user)
+    } yield company
 }
